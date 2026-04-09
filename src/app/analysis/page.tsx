@@ -531,6 +531,7 @@ function AnalysisContent() {
             phase={state.phase}
             progress={state.progress}
             usedDatasets={state.usedDatasets}
+            query={state.query}
           />
         ) : (
           <div className="flex h-full items-center justify-center">
