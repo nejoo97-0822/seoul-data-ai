@@ -355,139 +355,491 @@ function ArrivalBurst({
   );
 }
 
-// ─── Agent Character — a little face with eyes ──────────────────────
+// ─── Agent Character — jointed block character with limbs ──────────
 
-function AgentCharacter({ status, color }: { status: AgentStatus; color: string }) {
+// Darken a hex color by multiplying each channel
+function shadeHex(hex: string, factor: number): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const nr = Math.max(0, Math.min(255, Math.round(r * factor)));
+  const ng = Math.max(0, Math.min(255, Math.round(g * factor)));
+  const nb = Math.max(0, Math.min(255, Math.round(b * factor)));
+  return `#${nr.toString(16).padStart(2, "0")}${ng.toString(16).padStart(2, "0")}${nb.toString(16).padStart(2, "0")}`;
+}
+
+interface LimbAnim {
+  rotate: number | number[];
+  y?: number | number[];
+}
+
+interface CharAnim {
+  legLeft: LimbAnim;
+  legRight: LimbAnim;
+  armLeft: LimbAnim;
+  armRight: LimbAnim;
+  head: { rotate: number | number[] };
+  body: { y: number | number[]; rotate?: number | number[] };
+  duration: number;
+}
+
+function getCharAnim(agentId: string, status: AgentStatus): CharAnim {
+  // Idle — subtle breathing
+  if (status === "waiting") {
+    return {
+      legLeft: { rotate: 0 },
+      legRight: { rotate: 0 },
+      armLeft: { rotate: 2 },
+      armRight: { rotate: -2 },
+      head: { rotate: 0 },
+      body: { y: [0, -0.6, 0] },
+      duration: 3.2,
+    };
+  }
+
+  // Done — satisfied sway
+  if (status === "done") {
+    return {
+      legLeft: { rotate: 0 },
+      legRight: { rotate: 0 },
+      armLeft: { rotate: [2, -8, 2] },
+      armRight: { rotate: [-2, 8, -2] },
+      head: { rotate: [0, 3, 0, -3, 0] },
+      body: { y: [0, -1.5, 0] },
+      duration: 2.4,
+    };
+  }
+
+  // Working — varies by agent role
+  switch (agentId) {
+    case "interpreter":
+      // Reading / thinking — head tilts, both arms hold up as if reading paper
+      return {
+        legLeft: { rotate: 0 },
+        legRight: { rotate: 0 },
+        armLeft: { rotate: [-55, -45, -55] },
+        armRight: { rotate: [55, 45, 55] },
+        head: { rotate: [-4, 4, -4] },
+        body: { y: [0, -1, 0] },
+        duration: 2.0,
+      };
+
+    case "scout":
+      // Walking cycle — legs and arms swing alternating
+      return {
+        legLeft: { rotate: [-30, 30, -30] },
+        legRight: { rotate: [30, -30, 30] },
+        armLeft: { rotate: [30, -30, 30] },
+        armRight: { rotate: [-30, 30, -30] },
+        head: { rotate: [-2, 2, -2] },
+        body: { y: [0, -2, 0, -2, 0] },
+        duration: 0.8,
+      };
+
+    case "validator":
+      // Stamping — right arm raises high then slams down
+      return {
+        legLeft: { rotate: 0 },
+        legRight: { rotate: 0 },
+        armLeft: { rotate: -20 },
+        armRight: { rotate: [10, -120, -120, 10, 10] },
+        head: { rotate: [0, 0, -3, 0, 0] },
+        body: { y: [0, 0, -1, 0, 0] },
+        duration: 1.4,
+      };
+
+    case "analyst":
+      // Typing / calculating — both arms bob rapidly
+      return {
+        legLeft: { rotate: 0 },
+        legRight: { rotate: 0 },
+        armLeft: { rotate: [-75, -90, -75, -95, -75] },
+        armRight: { rotate: [75, 90, 75, 95, 75] },
+        head: { rotate: [-1.5, 1.5, -1.5] },
+        body: { y: [0, -0.8, 0] },
+        duration: 0.5,
+      };
+
+    case "reporter":
+      // Presenting — right arm sweeps outward in a grand gesture
+      return {
+        legLeft: { rotate: 0 },
+        legRight: { rotate: 0 },
+        armLeft: { rotate: -10 },
+        armRight: { rotate: [20, -70, -70, 20, 20] },
+        head: { rotate: [0, 5, 5, 0, 0] },
+        body: { y: [0, -1.2, 0] },
+        duration: 1.8,
+      };
+
+    default:
+      return {
+        legLeft: { rotate: 0 },
+        legRight: { rotate: 0 },
+        armLeft: { rotate: 0 },
+        armRight: { rotate: 0 },
+        head: { rotate: 0 },
+        body: { y: 0 },
+        duration: 2,
+      };
+  }
+}
+
+function AgentCharacter({
+  status,
+  color,
+  agentId,
+}: {
+  status: AgentStatus;
+  color: string;
+  agentId: string;
+}) {
   const isWorking = status === "working";
   const isDone = status === "done";
+  const anim = getCharAnim(agentId, status);
 
   // Blink periodically
   const [blink, setBlink] = useState(false);
   useEffect(() => {
-    const id = setInterval(() => {
-      setBlink(true);
-      setTimeout(() => setBlink(false), 120);
-    }, 2800 + Math.random() * 1500);
+    const id = setInterval(
+      () => {
+        setBlink(true);
+        setTimeout(() => setBlink(false), 110);
+      },
+      2600 + Math.random() * 1800
+    );
     return () => clearInterval(id);
   }, []);
 
+  // Derived colors
+  const shirtColor = color;
+  const pantsColor = shadeHex(color, 0.62);
+  const skinColor = shadeHex(color, 1.25);
+
+  const tx = {
+    duration: anim.duration,
+    repeat: Infinity,
+    ease: "easeInOut" as const,
+  };
+
+  // Character bounding box: 40 wide × 52 tall
+  // Head: 16×16 at (12, 0)
+  // Body: 14×16 at (13, 16)
+  // Arms: 4×14 from (9,18) and (27,18), origin top-center
+  // Legs: 5×13 from (14,30) and (21,30), origin top-center
+
   return (
-    <motion.div
-      className="relative"
-      animate={
-        isWorking
-          ? { y: [0, -5, 0, -3, 0] }
-          : isDone
-            ? { y: [0, -1, 0] }
-            : { y: [0, -0.5, 0] }
-      }
-      transition={{
-        duration: isWorking ? 1.4 : 3,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    >
-      {/* Shadow */}
+    <div className="relative" style={{ width: 40, height: 52 }}>
+      {/* Shadow on ground */}
       <motion.div
-        className="absolute top-[46px] left-1/2 -translate-x-1/2 rounded-full bg-black/10 blur-sm"
-        animate={{
-          scale: isWorking ? [1, 0.7, 1, 0.8, 1] : [1, 0.95, 1],
-          opacity: isWorking ? [0.25, 0.15, 0.25] : [0.2, 0.15, 0.2],
+        className="absolute rounded-full bg-black/18 blur-[1.5px]"
+        style={{
+          width: 26,
+          height: 4,
+          left: 7,
+          top: 47,
         }}
-        transition={{
-          duration: isWorking ? 1.4 : 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        style={{ width: 30, height: 5 }}
+        animate={
+          isWorking
+            ? { scaleX: [1, 0.85, 1, 0.9, 1], opacity: [0.25, 0.15, 0.25] }
+            : { scaleX: [1, 0.97, 1], opacity: [0.2, 0.17, 0.2] }
+        }
+        transition={tx}
       />
 
-      {/* Body (rounded pill base) */}
-      <div
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-b-[14px] rounded-t-[10px]"
-        style={{
-          backgroundColor: color,
-          width: 28,
-          height: 16,
-          bottom: 2,
-          opacity: 0.95,
-        }}
-      />
-
-      {/* Head */}
-      <div
-        className="relative flex flex-col items-center justify-center rounded-full shadow-lg border-2 border-white"
-        style={{
-          backgroundColor: color,
-          width: 38,
-          height: 38,
-        }}
+      {/* Whole body bob */}
+      <motion.div
+        className="absolute inset-0"
+        animate={{ y: anim.body.y }}
+        transition={tx}
       >
-        {/* Highlight spot */}
-        <div
-          className="absolute top-1 left-2 rounded-full bg-white/40"
-          style={{ width: 8, height: 6 }}
+        {/* LEFT LEG */}
+        <motion.div
+          className="absolute rounded-b-[2px] rounded-t-[1px]"
+          style={{
+            left: 14,
+            top: 30,
+            width: 5,
+            height: 13,
+            backgroundColor: pantsColor,
+            transformOrigin: "50% 0%",
+            boxShadow: "inset -1px 0 0 rgba(0,0,0,0.15)",
+          }}
+          animate={{ rotate: anim.legLeft.rotate }}
+          transition={tx}
         />
 
-        {/* Eyes */}
-        <div className="flex gap-[6px] items-center">
-          <motion.div
-            className="rounded-full bg-white"
-            animate={{
-              height: blink ? 1 : 4,
-              scaleY: blink ? 0.2 : 1,
+        {/* RIGHT LEG */}
+        <motion.div
+          className="absolute rounded-b-[2px] rounded-t-[1px]"
+          style={{
+            left: 21,
+            top: 30,
+            width: 5,
+            height: 13,
+            backgroundColor: pantsColor,
+            transformOrigin: "50% 0%",
+            boxShadow: "inset -1px 0 0 rgba(0,0,0,0.18)",
+          }}
+          animate={{ rotate: anim.legRight.rotate }}
+          transition={tx}
+        />
+
+        {/* BODY (torso/shirt) */}
+        <div
+          className="absolute rounded-[3px]"
+          style={{
+            left: 13,
+            top: 16,
+            width: 14,
+            height: 16,
+            backgroundColor: shirtColor,
+            boxShadow:
+              "inset -1.5px 0 0 rgba(0,0,0,0.15), inset 1px 1px 0 rgba(255,255,255,0.25)",
+          }}
+        >
+          {/* Collar detail */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 top-0 rounded-b-[2px]"
+            style={{
+              width: 6,
+              height: 2,
+              backgroundColor: shadeHex(color, 0.75),
             }}
-            transition={{ duration: 0.08 }}
-            style={{ width: 4, height: 4 }}
-          />
-          <motion.div
-            className="rounded-full bg-white"
-            animate={{
-              height: blink ? 1 : 4,
-              scaleY: blink ? 0.2 : 1,
-            }}
-            transition={{ duration: 0.08 }}
-            style={{ width: 4, height: 4 }}
           />
         </div>
 
-        {/* Mouth - changes with state */}
-        {isDone ? (
-          // Smile curve
-          <svg width="10" height="5" className="mt-[2px]">
-            <path
-              d="M 1 1 Q 5 4 9 1"
-              stroke="white"
-              strokeWidth="1.2"
-              fill="none"
-              strokeLinecap="round"
-            />
-          </svg>
-        ) : isWorking ? (
-          // Small o mouth (concentrated)
-          <motion.div
-            className="mt-[2px] rounded-full bg-white/90"
-            animate={{ scale: [1, 0.7, 1] }}
-            transition={{ duration: 0.8, repeat: Infinity }}
-            style={{ width: 2.5, height: 2.5 }}
-          />
-        ) : (
-          // Neutral small line
-          <div className="mt-[2px] h-[1px] w-[4px] bg-white/70 rounded-full" />
-        )}
-      </div>
-
-      {/* Working sweat/spark above head */}
-      {isWorking && (
+        {/* LEFT ARM */}
         <motion.div
-          className="absolute -top-1 left-1/2 -translate-x-1/2"
-          animate={{ y: [-2, -6, -2], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 1.2, repeat: Infinity }}
+          className="absolute rounded-[2px]"
+          style={{
+            left: 9,
+            top: 17,
+            width: 4,
+            height: 14,
+            backgroundColor: shirtColor,
+            transformOrigin: "50% 2px",
+            boxShadow: "inset 1px 0 0 rgba(255,255,255,0.2)",
+          }}
+          animate={{ rotate: anim.armLeft.rotate }}
+          transition={tx}
+        >
+          {/* Hand */}
+          <div
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
+            style={{
+              width: 4,
+              height: 4,
+              backgroundColor: skinColor,
+            }}
+          />
+        </motion.div>
+
+        {/* RIGHT ARM */}
+        <motion.div
+          className="absolute rounded-[2px]"
+          style={{
+            left: 27,
+            top: 17,
+            width: 4,
+            height: 14,
+            backgroundColor: shirtColor,
+            transformOrigin: "50% 2px",
+            boxShadow: "inset -1px 0 0 rgba(0,0,0,0.18)",
+          }}
+          animate={{ rotate: anim.armRight.rotate }}
+          transition={tx}
+        >
+          {/* Hand */}
+          <div
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
+            style={{
+              width: 4,
+              height: 4,
+              backgroundColor: skinColor,
+            }}
+          />
+        </motion.div>
+
+        {/* HEAD */}
+        <motion.div
+          className="absolute rounded-[4px] border border-white/50 shadow-sm"
+          style={{
+            left: 12,
+            top: 0,
+            width: 16,
+            height: 16,
+            backgroundColor: skinColor,
+            transformOrigin: "50% 100%",
+            boxShadow:
+              "inset -1.5px -1px 0 rgba(0,0,0,0.12), inset 1px 1px 0 rgba(255,255,255,0.35), 0 1px 2px rgba(0,0,0,0.1)",
+          }}
+          animate={{ rotate: anim.head.rotate }}
+          transition={tx}
+        >
+          {/* Hair cap (top band in shirt color) */}
+          <div
+            className="absolute top-0 left-0 right-0 rounded-t-[3px]"
+            style={{
+              height: 4,
+              backgroundColor: shadeHex(color, 0.55),
+            }}
+          />
+
+          {/* Eyes */}
+          <div
+            className="absolute flex gap-[4px]"
+            style={{ top: 6, left: 3 }}
+          >
+            <motion.div
+              className="bg-[#1f2937] rounded-sm"
+              animate={{ scaleY: blink ? 0.1 : 1 }}
+              transition={{ duration: 0.08 }}
+              style={{ width: 2.5, height: 2.5, transformOrigin: "center" }}
+            />
+            <motion.div
+              className="bg-[#1f2937] rounded-sm"
+              animate={{ scaleY: blink ? 0.1 : 1 }}
+              transition={{ duration: 0.08 }}
+              style={{ width: 2.5, height: 2.5, transformOrigin: "center" }}
+            />
+          </div>
+
+          {/* Mouth */}
+          {isDone ? (
+            <svg
+              width="8"
+              height="4"
+              className="absolute"
+              style={{ top: 11, left: 4 }}
+            >
+              <path
+                d="M 0.5 0.5 Q 4 3.5 7.5 0.5"
+                stroke="#1f2937"
+                strokeWidth="1"
+                fill="none"
+                strokeLinecap="round"
+              />
+            </svg>
+          ) : isWorking ? (
+            <motion.div
+              className="absolute rounded-full bg-[#1f2937]"
+              style={{ top: 11, left: 7, width: 2, height: 2 }}
+              animate={{ scale: [1, 0.6, 1] }}
+              transition={{ duration: 0.7, repeat: Infinity }}
+            />
+          ) : (
+            <div
+              className="absolute bg-[#1f2937] rounded-full"
+              style={{ top: 11.5, left: 6, width: 4, height: 1 }}
+            />
+          )}
+        </motion.div>
+      </motion.div>
+
+      {/* Thought / sweat indicator above head when working hard */}
+      {isWorking && (agentId === "analyst" || agentId === "validator") && (
+        <motion.div
+          className="absolute"
+          style={{ top: -2, left: 28 }}
+          animate={{
+            y: [0, -4, 0],
+            opacity: [0, 1, 0],
+          }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }}
+        >
+          <div
+            className="rounded-full"
+            style={{
+              width: 3,
+              height: 5,
+              backgroundColor: "#60A5FA",
+              borderTopLeftRadius: "50%",
+              borderTopRightRadius: "50%",
+            }}
+          />
+        </motion.div>
+      )}
+
+      {/* Thought bubble dots for interpreter */}
+      {isWorking && agentId === "interpreter" && (
+        <>
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-white border"
+              style={{
+                width: 3,
+                height: 3,
+                left: 30 + i * 1.5,
+                top: -2 - i * 2,
+                borderColor: color,
+              }}
+              animate={{ opacity: [0, 1, 0], scale: [0.6, 1, 0.6] }}
+              transition={{
+                duration: 1.8,
+                delay: i * 0.2,
+                repeat: Infinity,
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Footstep dust for scout */}
+      {isWorking && agentId === "scout" && (
+        <>
+          {[0, 1].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-muted-foreground/30"
+              style={{
+                width: 4,
+                height: 2,
+                left: 8 + i * 20,
+                top: 46,
+              }}
+              animate={{
+                opacity: [0, 0.6, 0],
+                scale: [0.4, 1, 1.4],
+                y: [0, -1, 0],
+              }}
+              transition={{
+                duration: 0.8,
+                delay: i * 0.4,
+                repeat: Infinity,
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Sparkle burst for reporter presenting */}
+      {isWorking && agentId === "reporter" && (
+        <motion.div
+          className="absolute"
+          style={{ left: 34, top: 14 }}
+          animate={{ opacity: [0, 1, 0], scale: [0.6, 1.1, 0.6] }}
+          transition={{ duration: 1.8, repeat: Infinity }}
         >
           <Sparkles className="h-3 w-3" style={{ color }} />
         </motion.div>
       )}
-    </motion.div>
+
+      {/* Done celebration — tiny stars */}
+      {isDone && (
+        <motion.div
+          className="absolute"
+          style={{ left: 28, top: -2 }}
+          initial={{ scale: 0, rotate: -20 }}
+          animate={{ scale: [0, 1, 1], rotate: [-20, 15, 0] }}
+          transition={{ duration: 0.6 }}
+        >
+          <Sparkles className="h-3 w-3 text-amber-400" />
+        </motion.div>
+      )}
+    </div>
   );
 }
 
@@ -641,9 +993,9 @@ function Station({
       {/* The agent character */}
       <div
         className="relative"
-        style={{ width: 38, height: 50, marginLeft: -19, marginTop: -42, zIndex: 10 }}
+        style={{ width: 40, height: 52, marginLeft: -20, marginTop: -44, zIndex: 10 }}
       >
-        <AgentCharacter status={status} color={station.color} />
+        <AgentCharacter status={status} color={station.color} agentId={station.id} />
       </div>
 
       {/* Micro events during active */}
