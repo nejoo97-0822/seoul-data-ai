@@ -391,16 +391,20 @@ function QuestScene({ query }: { query: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const particles = useMemo(
-    () =>
+  // Client-only random particles (avoid hydration mismatch)
+  const [particles, setParticles] = useState<
+    Array<{ id: number; angle: number; dist: number; delay: number }>
+  >([]);
+  useEffect(() => {
+    setParticles(
       Array.from({ length: 14 }, (_, i) => ({
         id: i,
         angle: (i / 14) * Math.PI * 2,
         dist: 80 + Math.random() * 40,
         delay: Math.random() * 0.6,
-      })),
-    []
-  );
+      }))
+    );
+  }, []);
 
   return (
     <div className="absolute inset-0 flex items-center justify-center">
@@ -983,8 +987,19 @@ function ComputeScene({ datasets }: { datasets: Dataset[] }) {
 // ═══════════════════════════════════════════════════════════════════
 
 function AmbientParticles() {
-  const particles = useMemo(
-    () =>
+  // Client-only to avoid hydration mismatch from Math.random
+  const [particles, setParticles] = useState<
+    Array<{
+      id: number;
+      x: number;
+      y: number;
+      size: number;
+      delay: number;
+      duration: number;
+    }>
+  >([]);
+  useEffect(() => {
+    setParticles(
       Array.from({ length: 10 }, (_, i) => ({
         id: i,
         x: 5 + Math.random() * 90,
@@ -992,9 +1007,9 @@ function AmbientParticles() {
         size: 1.5 + Math.random() * 2,
         delay: Math.random() * 5,
         duration: 5 + Math.random() * 4,
-      })),
-    []
-  );
+      }))
+    );
+  }, []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">

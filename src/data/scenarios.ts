@@ -57,10 +57,10 @@ export const scenarios: Scenario[] = [
       perspective: "영유아 자녀가 있는 가구 관점",
     },
     steps: [
-      { phase: "intent", title: "질문 의도 파악", description: "지역, 목적, 관점을 분석하고 있습니다", duration: 1500 },
-      { phase: "catalog", title: "내부 카탈로그 탐색", description: "관련 데이터셋을 검색하고 있습니다", duration: 2000 },
-      { phase: "exploration", title: "데이터 탐색 및 검증", description: "데이터 결합 가능성과 품질을 확인하고 있습니다", duration: 1500 },
-      { phase: "calculation", title: "분석 수행 중", description: "지표별 점수를 계산하고 순위를 매기고 있습니다", duration: 2000 },
+      { phase: "intent", title: "질문 의도 파악", description: "지역, 목적, 관점을 분석하고 있습니다", duration: 4500 },
+      { phase: "catalog", title: "내부 카탈로그 탐색", description: "관련 데이터셋을 검색하고 있습니다", duration: 5500 },
+      { phase: "exploration", title: "데이터 탐색 및 검증", description: "데이터 결합 가능성과 품질을 확인하고 있습니다", duration: 4500 },
+      { phase: "calculation", title: "분석 수행 중", description: "지표별 점수를 계산하고 순위를 매기고 있습니다", duration: 5500 },
       { phase: "result", title: "결과 생성 완료", description: "분석 결과를 정리했습니다", duration: 500 },
     ],
     result: {
@@ -105,10 +105,10 @@ export const scenarios: Scenario[] = [
       perspective: "혼자 거주하는 청년·직장인 관점",
     },
     steps: [
-      { phase: "intent", title: "질문 의도 파악", description: "1인 가구 관점의 생활 편의성을 분석합니다", duration: 1500 },
-      { phase: "catalog", title: "내부 카탈로그 탐색", description: "편의시설, 교통, 안전 데이터를 검색합니다", duration: 2000 },
-      { phase: "exploration", title: "데이터 탐색 및 검증", description: "심야 시간대 데이터 포함 여부를 확인합니다", duration: 1500 },
-      { phase: "calculation", title: "분석 수행 중", description: "편의성 지표를 계산하고 순위를 매기고 있습니다", duration: 2000 },
+      { phase: "intent", title: "질문 의도 파악", description: "1인 가구 관점의 생활 편의성을 분석합니다", duration: 4500 },
+      { phase: "catalog", title: "내부 카탈로그 탐색", description: "편의시설, 교통, 안전 데이터를 검색합니다", duration: 5500 },
+      { phase: "exploration", title: "데이터 탐색 및 검증", description: "심야 시간대 데이터 포함 여부를 확인합니다", duration: 4500 },
+      { phase: "calculation", title: "분석 수행 중", description: "편의성 지표를 계산하고 순위를 매기고 있습니다", duration: 5500 },
       { phase: "result", title: "결과 생성 완료", description: "분석 결과를 정리했습니다", duration: 500 },
     ],
     result: {
@@ -153,10 +153,10 @@ export const scenarios: Scenario[] = [
       perspective: "심야 시간대 도보 귀가자 관점",
     },
     steps: [
-      { phase: "intent", title: "질문 의도 파악", description: "야간 귀가 안전 관점을 분석합니다", duration: 1500 },
-      { phase: "catalog", title: "내부 카탈로그 탐색", description: "치안·조명·CCTV 데이터를 검색합니다", duration: 2000 },
-      { phase: "exploration", title: "데이터 탐색 및 검증", description: "야간 시간대 특화 데이터를 확인합니다", duration: 1500 },
-      { phase: "calculation", title: "분석 수행 중", description: "야간 안전 지표를 계산하고 있습니다", duration: 2000 },
+      { phase: "intent", title: "질문 의도 파악", description: "야간 귀가 안전 관점을 분석합니다", duration: 4500 },
+      { phase: "catalog", title: "내부 카탈로그 탐색", description: "치안·조명·CCTV 데이터를 검색합니다", duration: 5500 },
+      { phase: "exploration", title: "데이터 탐색 및 검증", description: "야간 시간대 특화 데이터를 확인합니다", duration: 4500 },
+      { phase: "calculation", title: "분석 수행 중", description: "야간 안전 지표를 계산하고 있습니다", duration: 5500 },
       { phase: "result", title: "결과 생성 완료", description: "분석 결과를 정리했습니다", duration: 500 },
     ],
     result: {
@@ -201,10 +201,10 @@ export const scenarios: Scenario[] = [
       perspective: "일상 생활권 접근성 관점",
     },
     steps: [
-      { phase: "intent", title: "질문 의도 파악", description: "생활 인프라 접근성을 분석합니다", duration: 1500 },
-      { phase: "catalog", title: "내부 카탈로그 탐색", description: "공원·의료·교통 데이터를 검색합니다", duration: 2000 },
-      { phase: "exploration", title: "데이터 탐색 및 검증", description: "접근 거리 산출을 위한 좌표 데이터를 확인합니다", duration: 1500 },
-      { phase: "calculation", title: "분석 수행 중", description: "접근성 점수를 계산하고 있습니다", duration: 2000 },
+      { phase: "intent", title: "질문 의도 파악", description: "생활 인프라 접근성을 분석합니다", duration: 4500 },
+      { phase: "catalog", title: "내부 카탈로그 탐색", description: "공원·의료·교통 데이터를 검색합니다", duration: 5500 },
+      { phase: "exploration", title: "데이터 탐색 및 검증", description: "접근 거리 산출을 위한 좌표 데이터를 확인합니다", duration: 4500 },
+      { phase: "calculation", title: "분석 수행 중", description: "접근성 점수를 계산하고 있습니다", duration: 5500 },
       { phase: "result", title: "결과 생성 완료", description: "분석 결과를 정리했습니다", duration: 500 },
     ],
     result: {
