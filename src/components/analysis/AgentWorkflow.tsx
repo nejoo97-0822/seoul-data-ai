@@ -651,121 +651,108 @@ function ValidateScene({ datasets }: { datasets: Dataset[] }) {
           { id: "v4", title: "데이터셋 D" },
         ];
 
+  // Belt is 80% wide (10% to 90% of container). Packets use CSS animations
+  // bound to this belt container so `left: 0%` / `left: 100%` are belt-relative.
   return (
     <div className="absolute inset-0 flex items-center justify-center">
-      {/* Conveyor belt backdrop */}
-      <div className="absolute left-[10%] right-[10%] top-1/2 -translate-y-1/2">
+      {/* Conveyor belt container (defines 0%-100% coordinate system) */}
+      <div className="absolute left-[10%] right-[10%] top-1/2 -translate-y-1/2 h-20">
         {/* Belt track */}
-        <div className="relative h-20 rounded-xl border border-amber-200 bg-amber-50/40">
+        <div className="relative h-full rounded-xl border-2 border-amber-200 bg-amber-50/50 overflow-visible">
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t-2 border-dashed border-amber-300/60" />
-          {/* Moving dashes to suggest motion */}
-          <motion.div
-            className="absolute top-1/2 -translate-y-1/2 h-[2px] w-6 bg-amber-400 rounded-full"
-            animate={{ left: ["0%", "100%"] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-          />
           <div className="absolute top-2 left-3 text-[9px] font-bold uppercase tracking-wider text-amber-700">
             Validation belt
           </div>
+          {/* Rolling marker to suggest belt motion */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 h-[3px] w-10 bg-amber-400/80 rounded-full"
+            style={{
+              animation: "beltMarker 1.8s linear infinite",
+            }}
+          />
         </div>
+
+        {/* Data packets flowing ON the belt (belt-relative positioning) */}
+        {displayDs.map((ds, i) => {
+          const isApproved = i !== 2;
+          const delay = `${0.3 + i * 1.1}s`;
+          const animName = isApproved ? "beltPacketFlow" : "beltPacketReject";
+          return (
+            <div
+              key={ds.id}
+              className="absolute top-1/2 z-20 -translate-x-1/2"
+              style={{
+                animation: `${animName} 4.2s ease-in-out ${delay} infinite`,
+              }}
+            >
+              <div
+                className={`relative rounded-lg border shadow-md px-2.5 py-1.5 whitespace-nowrap ${
+                  isApproved
+                    ? "bg-white border-amber-200"
+                    : "bg-red-50 border-red-300"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className={`h-1 w-1 rounded-full ${
+                      isApproved ? "bg-amber-500" : "bg-red-500"
+                    }`}
+                  />
+                  <span
+                    className={`text-[10px] font-semibold ${
+                      isApproved ? "text-amber-900" : "text-red-700"
+                    }`}
+                  >
+                    {ds.title}
+                  </span>
+                </div>
+
+                {/* Stamp overlay */}
+                <div
+                  className="absolute -top-1.5 -right-1.5"
+                  style={{
+                    animation: `stampPop 4.2s ease-out ${delay} infinite`,
+                  }}
+                >
+                  <div
+                    className={`h-4 w-4 rounded-full flex items-center justify-center shadow-md ${
+                      isApproved ? "bg-emerald-500" : "bg-red-500"
+                    }`}
+                  >
+                    {isApproved ? (
+                      <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                    ) : (
+                      <X className="h-3 w-3 text-white" strokeWidth={3} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Data packets flowing through belt */}
-      {displayDs.map((ds, i) => {
-        const isApproved = i !== 2; // 3rd one fails for drama
-        return (
-          <motion.div
-            key={ds.id}
-            className="absolute top-1/2 z-20"
-            initial={{ left: "0%", y: -10, opacity: 0, scale: 0.8 }}
-            animate={{
-              left: [
-                "0%",
-                `${25 + i * 15}%`,
-                `${25 + i * 15}%`,
-                isApproved ? "105%" : `${25 + i * 15}%`,
-              ],
-              y: [
-                -10,
-                -10,
-                -10,
-                isApproved ? -10 : 40,
-              ],
-              opacity: [0, 1, 1, isApproved ? 0.9 : 0],
-              scale: [0.8, 1, 1, isApproved ? 1 : 0.4],
-            }}
-            transition={{
-              duration: 3.5,
-              delay: 0.3 + i * 0.45,
-              times: [0, 0.25, 0.55, 1],
-              ease: "easeInOut",
-              repeat: Infinity,
-              repeatDelay: 0.5,
-            }}
-          >
-            <div
-              className={`relative rounded-lg border shadow-md px-2.5 py-1.5 whitespace-nowrap ${
-                isApproved
-                  ? "bg-white border-amber-200"
-                  : "bg-red-50 border-red-300"
-              }`}
-            >
-              <div className="flex items-center gap-1.5">
-                <div
-                  className={`h-1 w-1 rounded-full ${
-                    isApproved ? "bg-amber-500" : "bg-red-500"
-                  }`}
-                />
-                <span
-                  className={`text-[10px] font-semibold ${
-                    isApproved ? "text-amber-900" : "text-red-700"
-                  }`}
-                >
-                  {ds.title}
-                </span>
-              </div>
-
-              {/* Stamp overlay */}
-              <motion.div
-                className="absolute -top-1.5 -right-1.5"
-                initial={{ scale: 0, rotate: -30 }}
-                animate={{
-                  scale: [0, 1.4, 1],
-                  rotate: [-30, 8, 0],
-                }}
-                transition={{
-                  delay: 0.3 + i * 0.45 + 1.2,
-                  type: "spring",
-                  stiffness: 300,
-                }}
-              >
-                <div
-                  className={`h-4 w-4 rounded-full flex items-center justify-center shadow-md ${
-                    isApproved ? "bg-emerald-500" : "bg-red-500"
-                  }`}
-                >
-                  {isApproved ? (
-                    <Check className="h-3 w-3 text-white" strokeWidth={3} />
-                  ) : (
-                    <X className="h-3 w-3 text-white" strokeWidth={3} />
-                  )}
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
-        );
-      })}
-
       {/* Validator agent hovering above the belt with stamp */}
-      <motion.div
+      <div
         className="absolute"
-        style={{ right: "15%", top: "28%" }}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, type: "spring" }}
+        style={{
+          right: "15%",
+          top: "28%",
+          animation: "validatorBreathe 2s ease-in-out infinite",
+        }}
       >
         <AgentCharacter status="working" color="#F59E0B" agentId="validator" />
-      </motion.div>
+      </div>
+
+      {/* Scene caption */}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 text-center">
+        <div className="text-xs font-semibold text-amber-900 uppercase tracking-widest mb-1">
+          Data Quality Gate
+        </div>
+        <div className="text-[11px] text-amber-700/80">
+          {displayDs.length}개 데이터셋 중 품질 검증 중…
+        </div>
+      </div>
     </div>
   );
 }
@@ -1063,29 +1050,24 @@ export function AgentWorkflow({
     <div className="flex flex-col h-full overflow-hidden bg-gradient-to-br from-slate-50/40 via-white to-slate-50/40">
       {/* Top status bar */}
       <div className="px-5 pt-4 pb-3 flex items-center justify-between shrink-0">
-        <AnimatePresence mode="wait">
+        {/* Plain div re-mounted via key; avoids AnimatePresence mode="wait" bug */}
+        <div
+          key={phase}
+          className="flex items-center gap-2.5 animate-[phaseFadeIn_0.3s_ease-out]"
+        >
           <motion.div
-            key={phase}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 8 }}
-            transition={{ duration: 0.3 }}
-            className="flex items-center gap-2.5"
-          >
-            <motion.div
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: config.color }}
-              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            />
-            <span className={`text-sm font-semibold ${config.accent}`}>
-              {config.label}
-            </span>
-            <span className="text-xs text-muted-foreground hidden sm:inline">
-              {config.description}
-            </span>
-          </motion.div>
-        </AnimatePresence>
+            className="h-2 w-2 rounded-full"
+            style={{ backgroundColor: config.color }}
+            animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          <span className={`text-sm font-semibold ${config.accent}`}>
+            {config.label}
+          </span>
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            {config.description}
+          </span>
+        </div>
 
         <span className="text-[11px] text-muted-foreground/50 tabular-nums">
           {phaseIdx}/5
@@ -1120,59 +1102,24 @@ export function AgentWorkflow({
       <div className="relative flex-1 min-h-0">
         <AmbientParticles />
 
-        <AnimatePresence mode="wait">
-          {phase === "intent" && (
-            <motion.div
-              key="scene-intent"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.45 }}
-              className="absolute inset-0"
-            >
-              <QuestScene query={query} />
-            </motion.div>
-          )}
-
-          {phase === "catalog" && (
-            <motion.div
-              key="scene-catalog"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.45 }}
-              className="absolute inset-0"
-            >
-              <CatalogScene datasets={usedDatasets} />
-            </motion.div>
-          )}
-
+        {/*
+          NOTE: We intentionally do NOT wrap scenes in AnimatePresence.
+          AnimatePresence mode="wait" combined with children that use
+          repeat: Infinity can leave the incoming scene's motion wrapper
+          stuck at its initial opacity: 0 state (observed bug: exploration
+          scene rendered blank). Each scene is mounted fresh with a key
+          and fades itself in internally.
+        */}
+        <div key={`scene-${phase}`} className="absolute inset-0">
+          {phase === "intent" && <QuestScene query={query} />}
+          {phase === "catalog" && <CatalogScene datasets={usedDatasets} />}
           {phase === "exploration" && (
-            <motion.div
-              key="scene-exploration"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.45 }}
-              className="absolute inset-0"
-            >
-              <ValidateScene datasets={usedDatasets} />
-            </motion.div>
+            <ValidateScene datasets={usedDatasets} />
           )}
-
           {phase === "calculation" && (
-            <motion.div
-              key="scene-calculation"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.45 }}
-              className="absolute inset-0"
-            >
-              <ComputeScene datasets={usedDatasets} />
-            </motion.div>
+            <ComputeScene datasets={usedDatasets} />
           )}
-        </AnimatePresence>
+        </div>
       </div>
 
       {/* Datasets footer */}
