@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -14,77 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import type { AnalysisPhase } from "@/hooks/useAnalysisSimulation";
 import type { Dataset } from "@/data/datasets";
 
-// ─── Agent Definitions ──────────────────────────────────────────────
-
-interface AgentDef {
-  id: string;
-  phase: AnalysisPhase;
-  name: string;
-  description: string;
-  icon: typeof Search;
-  gradient: string;       // for active glow
-  accentColor: string;    // tailwind text
-  bgActive: string;       // tailwind bg
-  ringColor: string;      // ring glow
-}
-
-const AGENTS: AgentDef[] = [
-  {
-    id: "interpreter",
-    phase: "intent",
-    name: "질문 해석",
-    description: "질문의 의도와 범위를 파악하고 있어요",
-    icon: Search,
-    gradient: "from-blue-400 to-blue-600",
-    accentColor: "text-blue-600",
-    bgActive: "bg-blue-50",
-    ringColor: "ring-blue-300/40",
-  },
-  {
-    id: "scout",
-    phase: "catalog",
-    name: "데이터 탐색",
-    description: "관련 공공데이터를 찾고 있어요",
-    icon: Database,
-    gradient: "from-emerald-400 to-emerald-600",
-    accentColor: "text-emerald-600",
-    bgActive: "bg-emerald-50",
-    ringColor: "ring-emerald-300/40",
-  },
-  {
-    id: "validator",
-    phase: "exploration",
-    name: "데이터 검증",
-    description: "데이터 품질과 결합 가능성을 확인해요",
-    icon: ShieldCheck,
-    gradient: "from-amber-400 to-amber-600",
-    accentColor: "text-amber-600",
-    bgActive: "bg-amber-50",
-    ringColor: "ring-amber-300/40",
-  },
-  {
-    id: "analyst",
-    phase: "calculation",
-    name: "분석 수행",
-    description: "지표별 점수를 계산하고 순위를 매겨요",
-    icon: Calculator,
-    gradient: "from-violet-400 to-violet-600",
-    accentColor: "text-violet-600",
-    bgActive: "bg-violet-50",
-    ringColor: "ring-violet-300/40",
-  },
-  {
-    id: "reporter",
-    phase: "result",
-    name: "결과 생성",
-    description: "차트와 리포트를 만들고 있어요",
-    icon: FileBarChart,
-    gradient: "from-rose-400 to-rose-600",
-    accentColor: "text-rose-600",
-    bgActive: "bg-rose-50",
-    ringColor: "ring-rose-300/40",
-  },
-];
+// ─── Constants ──────────────────────────────────────────────────────
 
 const PHASE_ORDER: AnalysisPhase[] = [
   "intent",
@@ -94,204 +24,466 @@ const PHASE_ORDER: AnalysisPhase[] = [
   "result",
 ];
 
-// ─── Animated ring pulses around active node ────────────────────────
+// Station positions as percentages of the canvas (x, y)
+// Arranged in a gentle arc / organic layout, NOT a straight line
+const STATION_POSITIONS: { x: number; y: number }[] = [
+  { x: 12, y: 30 },   // Interpreter - top left
+  { x: 32, y: 58 },   // Scout - mid left low
+  { x: 50, y: 28 },   // Validator - center top
+  { x: 68, y: 56 },   // Analyst - mid right low
+  { x: 88, y: 32 },   // Reporter - top right
+];
 
-function PulseRings({ gradient }: { gradient: string }) {
+// ─── Agent / Station Definitions ────────────────────────────────────
+
+interface StationDef {
+  id: string;
+  phase: AnalysisPhase;
+  label: string;
+  description: string;
+  icon: typeof Search;
+  color: string;         // hex for inline styles
+  accentTw: string;      // tailwind text
+  bgTw: string;          // tailwind bg
+  borderTw: string;      // tailwind border
+}
+
+const STATIONS: StationDef[] = [
+  {
+    id: "interpreter",
+    phase: "intent",
+    label: "질문 해석",
+    description: "의도를 파악하고 있어요",
+    icon: Search,
+    color: "#3B82F6",
+    accentTw: "text-blue-500",
+    bgTw: "bg-blue-50",
+    borderTw: "border-blue-200",
+  },
+  {
+    id: "scout",
+    phase: "catalog",
+    label: "데이터 탐색",
+    description: "공공데이터를 찾고 있어요",
+    icon: Database,
+    color: "#10B981",
+    accentTw: "text-emerald-500",
+    bgTw: "bg-emerald-50",
+    borderTw: "border-emerald-200",
+  },
+  {
+    id: "validator",
+    phase: "exploration",
+    label: "데이터 검증",
+    description: "품질을 확인하고 있어요",
+    icon: ShieldCheck,
+    color: "#F59E0B",
+    accentTw: "text-amber-500",
+    bgTw: "bg-amber-50",
+    borderTw: "border-amber-200",
+  },
+  {
+    id: "analyst",
+    phase: "calculation",
+    label: "분석 수행",
+    description: "점수를 계산하고 있어요",
+    icon: Calculator,
+    color: "#8B5CF6",
+    accentTw: "text-violet-500",
+    bgTw: "bg-violet-50",
+    borderTw: "border-violet-200",
+  },
+  {
+    id: "reporter",
+    phase: "result",
+    label: "결과 생성",
+    description: "리포트를 만들고 있어요",
+    icon: FileBarChart,
+    color: "#F43F5E",
+    accentTw: "text-rose-500",
+    bgTw: "bg-rose-50",
+    borderTw: "border-rose-200",
+  },
+];
+
+// ─── SVG path lines connecting stations ─────────────────────────────
+
+function ConnectionPaths({
+  currentIdx,
+  canvasW,
+  canvasH,
+}: {
+  currentIdx: number;
+  canvasW: number;
+  canvasH: number;
+}) {
   return (
-    <>
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${gradient} opacity-0`}
-          animate={{
-            scale: [1, 1.8 + i * 0.3],
-            opacity: [0.25, 0],
-          }}
-          transition={{
-            duration: 2.2,
-            delay: i * 0.6,
-            repeat: Infinity,
-            ease: "easeOut",
-          }}
-        />
-      ))}
-    </>
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      {STATION_POSITIONS.slice(0, -1).map((from, i) => {
+        const to = STATION_POSITIONS[i + 1];
+        const x1 = (from.x / 100) * canvasW;
+        const y1 = (from.y / 100) * canvasH;
+        const x2 = (to.x / 100) * canvasW;
+        const y2 = (to.y / 100) * canvasH;
+
+        // Curved connection
+        const midX = (x1 + x2) / 2;
+        const midY = Math.min(y1, y2) - 20;
+
+        const isDone = i < currentIdx;
+        const isActive = i === currentIdx - 1 || i === currentIdx;
+
+        return (
+          <g key={i}>
+            {/* Background path */}
+            <path
+              d={`M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`}
+              fill="none"
+              stroke={isDone ? STATIONS[i + 1].color : "var(--color-border)"}
+              strokeWidth={isDone ? 2 : 1.5}
+              strokeDasharray={isDone ? "none" : "6 4"}
+              opacity={isDone ? 0.35 : 0.25}
+              strokeLinecap="round"
+            />
+            {/* Active glow */}
+            {isActive && isDone && (
+              <path
+                d={`M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`}
+                fill="none"
+                stroke={STATIONS[i + 1].color}
+                strokeWidth={3}
+                opacity={0.15}
+                filter="url(#glow)"
+                strokeLinecap="round"
+              />
+            )}
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
-// ─── Data packet that travels between nodes ─────────────────────────
+// ─── Data packet flying between stations ────────────────────────────
 
-function DataPacket({ gradient }: { gradient: string }) {
+function FlyingPacket({
+  fromIdx,
+  toIdx,
+  color,
+  canvasW,
+  canvasH,
+}: {
+  fromIdx: number;
+  toIdx: number;
+  color: string;
+  canvasW: number;
+  canvasH: number;
+}) {
+  const from = STATION_POSITIONS[fromIdx];
+  const to = STATION_POSITIONS[toIdx];
+
+  const x1 = (from.x / 100) * canvasW;
+  const y1 = (from.y / 100) * canvasH;
+  const x2 = (to.x / 100) * canvasW;
+  const y2 = (to.y / 100) * canvasH;
+
   return (
     <motion.div
-      className="absolute top-1/2 -translate-y-1/2 z-10"
-      initial={{ left: "-10%", opacity: 0, scale: 0.3 }}
+      className="absolute z-30 pointer-events-none"
+      initial={{ left: x1, top: y1, opacity: 0, scale: 0.3 }}
       animate={{
-        left: ["0%", "100%"],
+        left: [x1, (x1 + x2) / 2, x2],
+        top: [y1, Math.min(y1, y2) - 30, y2],
         opacity: [0, 1, 1, 0],
-        scale: [0.4, 1, 1, 0.4],
+        scale: [0.3, 1.2, 1, 0.3],
       }}
-      transition={{ duration: 1, ease: "easeInOut" }}
+      transition={{ duration: 1.2, ease: "easeInOut" }}
+      style={{ marginLeft: -6, marginTop: -6 }}
     >
-      <div className={`h-3 w-3 rounded-full bg-gradient-to-br ${gradient} shadow-lg`}>
-        <motion.div
-          className={`absolute inset-0 rounded-full bg-gradient-to-br ${gradient}`}
-          animate={{ scale: [1, 1.8], opacity: [0.5, 0] }}
-          transition={{ duration: 0.8, repeat: Infinity }}
-        />
-      </div>
+      <div
+        className="h-3 w-3 rounded-full shadow-lg"
+        style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}50` }}
+      />
     </motion.div>
   );
 }
 
-// ─── Connector line between nodes ───────────────────────────────────
+// ─── Agent token (the little character that moves) ──────────────────
 
-function Connector({
-  status,
-  transferGradient,
+function AgentToken({
+  stationIdx,
+  color,
+  isWorking,
+  canvasW,
+  canvasH,
 }: {
-  status: "pending" | "active" | "done";
-  transferGradient: string | null;
+  stationIdx: number;
+  color: string;
+  isWorking: boolean;
+  canvasW: number;
+  canvasH: number;
 }) {
-  return (
-    <div className="relative flex items-center w-10 sm:w-16 lg:w-20 shrink-0 mx-0.5">
-      {/* Background line */}
-      <div className="absolute inset-y-1/2 left-0 right-0 h-[2px] rounded-full bg-border/40" />
-
-      {/* Active / done overlay */}
-      <motion.div
-        className="absolute inset-y-1/2 left-0 right-0 h-[2px] rounded-full bg-primary/30"
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: status !== "pending" ? 1 : 0 }}
-        style={{ transformOrigin: "left" }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      />
-
-      {/* Flowing glow on active */}
-      {status === "active" && (
-        <motion.div
-          className="absolute inset-y-1/2 left-0 h-[3px] w-6 rounded-full bg-primary/50 blur-sm"
-          animate={{ left: ["0%", "80%", "0%"] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        />
-      )}
-
-      {/* Data packet */}
-      <AnimatePresence>
-        {transferGradient && <DataPacket gradient={transferGradient} />}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-// ─── Single agent node ──────────────────────────────────────────────
-
-function AgentNode({
-  agent,
-  status,
-  isCurrent,
-}: {
-  agent: AgentDef;
-  status: "pending" | "active" | "completed";
-  isCurrent: boolean;
-}) {
-  const Icon = agent.icon;
-  const isActive = status === "active";
-  const isDone = status === "completed";
+  const pos = STATION_POSITIONS[stationIdx];
+  const x = (pos.x / 100) * canvasW;
+  const y = (pos.y / 100) * canvasH;
 
   return (
-    <div className="relative flex flex-col items-center shrink-0 w-[72px] sm:w-[88px] lg:w-[100px]">
-      {/* Pulse rings for active */}
-      {isActive && (
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16">
-          <PulseRings gradient={agent.gradient} />
-        </div>
-      )}
-
-      {/* Node */}
+    <motion.div
+      className="absolute z-20 pointer-events-none"
+      animate={{
+        left: x,
+        top: y - 38,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 80,
+        damping: 18,
+        mass: 1,
+      }}
+      style={{ marginLeft: -14 }}
+    >
+      {/* Agent body */}
       <motion.div
-        className={`relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-3xl border-2 transition-all duration-500 z-10 ${
-          isActive
-            ? `${agent.bgActive} border-current ${agent.accentColor} shadow-lg ring-4 ${agent.ringColor}`
-            : isDone
-              ? "bg-primary/5 border-primary/25 text-primary"
-              : "bg-muted/30 border-border/30 text-muted-foreground/25"
-        }`}
+        className="relative"
         animate={
-          isActive
-            ? { y: [0, -4, 0] }
+          isWorking
+            ? { y: [0, -3, 0, -2, 0] }
             : {}
         }
         transition={
-          isActive
-            ? { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
+          isWorking
+            ? { duration: 1.8, repeat: Infinity, ease: "easeInOut" }
             : {}
         }
+      >
+        {/* Glow behind agent */}
+        {isWorking && (
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full"
+            style={{ backgroundColor: color }}
+            animate={{ scale: [1, 1.5, 1], opacity: [0.15, 0.05, 0.15] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+        )}
+
+        {/* Main circle */}
+        <div
+          className="relative h-7 w-7 rounded-full border-2 border-white shadow-md flex items-center justify-center"
+          style={{ backgroundColor: color }}
+        >
+          {/* Face - two dots for eyes */}
+          <div className="flex gap-[3px]">
+            <div className="h-[3px] w-[3px] rounded-full bg-white/90" />
+            <div className="h-[3px] w-[3px] rounded-full bg-white/90" />
+          </div>
+        </div>
+
+        {/* Working indicator - small orbiting dot */}
+        {isWorking && (
+          <motion.div
+            className="absolute top-0 left-1/2 w-2 h-2 rounded-full"
+            style={{ backgroundColor: color, marginLeft: -4 }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            // orbit around center
+          >
+            <motion.div
+              className="absolute h-1.5 w-1.5 rounded-full bg-white shadow-sm"
+              style={{ top: -8, left: 0.5 }}
+            />
+          </motion.div>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── Station (zone where work happens) ──────────────────────────────
+
+function Station({
+  station,
+  position,
+  status,
+  canvasW,
+  canvasH,
+}: {
+  station: StationDef;
+  position: { x: number; y: number };
+  status: "pending" | "active" | "completed";
+  canvasW: number;
+  canvasH: number;
+}) {
+  const Icon = station.icon;
+  const isActive = status === "active";
+  const isDone = status === "completed";
+
+  const x = (position.x / 100) * canvasW;
+  const y = (position.y / 100) * canvasH;
+
+  return (
+    <motion.div
+      className="absolute flex flex-col items-center pointer-events-none"
+      style={{ left: x, top: y, transform: "translate(-50%, -50%)" }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Active zone glow - the "ground" effect */}
+      {isActive && (
+        <>
+          <motion.div
+            className="absolute rounded-full"
+            style={{
+              width: 100,
+              height: 40,
+              top: 16,
+              background: `radial-gradient(ellipse, ${station.color}18 0%, transparent 70%)`,
+            }}
+            animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+          />
+          {/* Ripple rings on ground */}
+          {[0, 1].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full border"
+              style={{
+                width: 60,
+                height: 24,
+                top: 22,
+                borderColor: `${station.color}30`,
+              }}
+              animate={{ scale: [1, 2], opacity: [0.4, 0] }}
+              transition={{
+                duration: 2,
+                delay: i * 0.8,
+                repeat: Infinity,
+                ease: "easeOut",
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Station platform */}
+      <motion.div
+        className={`relative flex h-12 w-12 items-center justify-center rounded-2xl border-[1.5px] transition-all duration-700 ${
+          isActive
+            ? `${station.bgTw} ${station.borderTw} shadow-lg`
+            : isDone
+              ? `bg-white ${station.borderTw} shadow-sm`
+              : "bg-muted/40 border-border/30"
+        }`}
+        animate={isActive ? { scale: [1, 1.06, 1] } : {}}
+        transition={isActive ? { duration: 3, repeat: Infinity, ease: "easeInOut" } : {}}
       >
         {isDone ? (
           <motion.div
             initial={{ scale: 0, rotate: -90 }}
             animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            transition={{ type: "spring", stiffness: 250, damping: 18 }}
           >
-            <CheckCircle2 className="h-6 w-6 sm:h-7 sm:w-7" />
+            <CheckCircle2 className={`h-5 w-5 ${station.accentTw}`} />
           </motion.div>
         ) : (
-          <Icon className={`h-6 w-6 sm:h-7 sm:w-7 transition-all duration-500 ${isActive ? "scale-110" : ""}`} />
+          <Icon
+            className={`h-5 w-5 transition-colors duration-500 ${
+              isActive ? station.accentTw : "text-muted-foreground/25"
+            }`}
+          />
         )}
 
-        {/* Spinning ring for calculation phase */}
-        {isActive && agent.phase === "calculation" && (
-          <motion.div
-            className={`absolute inset-[-3px] rounded-3xl border-2 border-dashed ${agent.accentColor} opacity-30`}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-          />
+        {/* Active sparkle dots */}
+        {isActive && (
+          <>
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="absolute h-1 w-1 rounded-full"
+                style={{ backgroundColor: station.color }}
+                animate={{
+                  x: [0, (i - 1) * 18],
+                  y: [0, -12 - i * 4, 0],
+                  opacity: [0, 0.7, 0],
+                  scale: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1.5,
+                  delay: i * 0.35,
+                  repeat: Infinity,
+                  ease: "easeOut",
+                }}
+              />
+            ))}
+          </>
         )}
       </motion.div>
 
       {/* Label */}
-      <motion.p
-        className={`mt-2.5 text-[11px] sm:text-xs font-semibold text-center transition-colors duration-500 ${
-          isActive
-            ? agent.accentColor
-            : isDone
-              ? "text-foreground/70"
-              : "text-muted-foreground/30"
-        }`}
-        animate={isActive ? { opacity: [0.7, 1, 0.7] } : {}}
-        transition={isActive ? { duration: 2, repeat: Infinity } : {}}
-      >
-        {agent.name}
-      </motion.p>
-    </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${station.id}-${status}`}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-2 text-center"
+        >
+          <p
+            className={`text-[11px] font-semibold transition-colors duration-500 ${
+              isActive
+                ? station.accentTw
+                : isDone
+                  ? "text-foreground/60"
+                  : "text-muted-foreground/25"
+            }`}
+          >
+            {station.label}
+          </p>
+          {isActive && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[10px] text-muted-foreground mt-0.5"
+            >
+              {station.description}
+            </motion.p>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
-// ─── Floating background particles ──────────────────────────────────
+// ─── Ambient floating particles ─────────────────────────────────────
 
-function BackgroundParticles({ active }: { active: boolean }) {
+function AmbientParticles() {
   const particles = useMemo(
     () =>
-      Array.from({ length: 12 }, (_, i) => ({
+      Array.from({ length: 16 }, (_, i) => ({
         id: i,
-        x: 10 + Math.random() * 80,
-        y: 15 + Math.random() * 70,
-        size: 2 + Math.random() * 3,
-        delay: Math.random() * 4,
-        duration: 3 + Math.random() * 3,
+        x: 5 + Math.random() * 90,
+        y: 10 + Math.random() * 80,
+        size: 1.5 + Math.random() * 2.5,
+        delay: Math.random() * 5,
+        duration: 4 + Math.random() * 4,
       })),
     []
   );
 
-  if (!active) return null;
-
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
       {particles.map((p) => (
         <motion.div
           key={p.id}
-          className="absolute rounded-full bg-primary/10"
+          className="absolute rounded-full bg-primary/8"
           style={{
             left: `${p.x}%`,
             top: `${p.y}%`,
@@ -299,9 +491,8 @@ function BackgroundParticles({ active }: { active: boolean }) {
             height: p.size,
           }}
           animate={{
-            y: [0, -20, 0],
-            opacity: [0, 0.6, 0],
-            scale: [0.5, 1, 0.5],
+            y: [0, -15, 0],
+            opacity: [0, 0.5, 0],
           }}
           transition={{
             duration: p.duration,
@@ -324,31 +515,43 @@ interface AgentWorkflowProps {
 }
 
 export function AgentWorkflow({ phase, progress, usedDatasets }: AgentWorkflowProps) {
-  const [transfers, setTransfers] = useState<Set<string>>(new Set());
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ w: 700, h: 400 });
+  const [packets, setPackets] = useState<{ id: number; from: number; to: number }[]>([]);
   const [prevPhase, setPrevPhase] = useState<AnalysisPhase>(phase);
+  const packetId = useRef(0);
 
   const currentIdx = PHASE_ORDER.indexOf(phase);
-  const activeAgent = AGENTS.find((a) => a.phase === phase);
+  const activeStation = STATIONS[currentIdx];
 
-  // Trigger data packet transfer on phase change
+  // Measure canvas
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        setCanvasSize({
+          w: entry.contentRect.width,
+          h: entry.contentRect.height,
+        });
+      }
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Trigger flying packet on phase change
   useEffect(() => {
     if (phase !== prevPhase) {
       setPrevPhase(phase);
-      const idx = PHASE_ORDER.indexOf(phase);
-      if (idx > 0) {
-        const prevAgent = AGENTS[idx - 1];
-        setTransfers((s) => {
-          const n = new Set(s);
-          n.add(prevAgent.id);
-          return n;
-        });
+      const newIdx = PHASE_ORDER.indexOf(phase);
+      if (newIdx > 0) {
+        const id = ++packetId.current;
+        setPackets((p) => [...p, { id, from: newIdx - 1, to: newIdx }]);
         const timer = setTimeout(() => {
-          setTransfers((s) => {
-            const n = new Set(s);
-            n.delete(prevAgent.id);
-            return n;
-          });
-        }, 1000);
+          setPackets((p) => p.filter((pk) => pk.id !== id));
+        }, 1400);
         return () => clearTimeout(timer);
       }
     }
@@ -357,133 +560,148 @@ export function AgentWorkflow({ phase, progress, usedDatasets }: AgentWorkflowPr
   if (phase === "idle" || phase === "no-match") return null;
 
   return (
-    <div className="relative flex flex-col h-full items-center justify-center overflow-hidden">
-      {/* Floating background particles */}
-      <BackgroundParticles active={true} />
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Status bar - minimal */}
+      <div className="px-5 pt-4 pb-3 flex items-center justify-between">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={phase}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center gap-2.5"
+          >
+            <motion.div
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: activeStation?.color || "#3B82F6" }}
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            <span className={`text-sm font-semibold ${activeStation?.accentTw || ""}`}>
+              {activeStation?.label}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {activeStation?.description}
+            </span>
+          </motion.div>
+        </AnimatePresence>
 
-      {/* Subtle radial glow behind active agent */}
-      <div className="absolute inset-0 pointer-events-none">
-        <motion.div
-          className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-gradient-to-br ${activeAgent?.gradient || "from-blue-400 to-blue-600"} opacity-[0.04] blur-3xl`}
-          animate={{ scale: [1, 1.2, 1], opacity: [0.03, 0.06, 0.03] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        />
+        <span className="text-[11px] text-muted-foreground/50 tabular-nums">
+          {currentIdx + 1}/{STATIONS.length}
+        </span>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center w-full max-w-2xl px-4">
-        {/* Status text */}
-        <div className="mb-10 text-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={phase}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.4 }}
-            >
-              <p className={`text-base sm:text-lg font-semibold ${activeAgent?.accentColor || "text-foreground"}`}>
-                {activeAgent?.name || "처리 중"}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {activeAgent?.description || ""}
-              </p>
-            </motion.div>
-          </AnimatePresence>
+      {/* Progress */}
+      <div className="px-5 pb-3">
+        <div className="relative h-1 rounded-full bg-border/25 overflow-hidden">
+          <motion.div
+            className="absolute inset-y-0 left-0 rounded-full"
+            style={{
+              background: `linear-gradient(90deg, ${STATIONS[0].color}80, ${activeStation?.color || STATIONS[0].color})`,
+            }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+          <motion.div
+            className="absolute inset-y-0 w-8 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+            animate={{ left: ["-5%", "105%"] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", repeatDelay: 0.5 }}
+          />
         </div>
+      </div>
 
-        {/* Pipeline nodes */}
-        <div className="flex items-center justify-center">
-          {AGENTS.map((agent, i) => {
-            const agentIdx = PHASE_ORDER.indexOf(agent.phase);
-            const status: "pending" | "active" | "completed" =
-              agentIdx < currentIdx
-                ? "completed"
-                : agentIdx === currentIdx
-                  ? "active"
-                  : "pending";
+      {/* Spatial canvas */}
+      <div ref={containerRef} className="relative flex-1 min-h-0">
+        {/* Ambient particles */}
+        <AmbientParticles />
 
-            const connectorStatus =
-              agentIdx < currentIdx
-                ? "done"
-                : agentIdx === currentIdx
-                  ? "active"
-                  : "pending";
+        {/* Connection paths */}
+        <ConnectionPaths
+          currentIdx={currentIdx}
+          canvasW={canvasSize.w}
+          canvasH={canvasSize.h}
+        />
 
-            return (
-              <div key={agent.id} className="flex items-center">
-                <AgentNode
-                  agent={agent}
-                  status={status}
-                  isCurrent={agentIdx === currentIdx}
-                />
-                {i < AGENTS.length - 1 && (
-                  <Connector
-                    status={connectorStatus}
-                    transferGradient={
-                      transfers.has(agent.id) ? AGENTS[i + 1].gradient : null
-                    }
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {/* Stations */}
+        {STATIONS.map((station, i) => {
+          const stationPhaseIdx = PHASE_ORDER.indexOf(station.phase);
+          const status: "pending" | "active" | "completed" =
+            stationPhaseIdx < currentIdx
+              ? "completed"
+              : stationPhaseIdx === currentIdx
+                ? "active"
+                : "pending";
 
-        {/* Progress bar */}
-        <div className="mt-10 w-full max-w-xs">
-          <div className="relative h-1.5 rounded-full bg-border/30 overflow-hidden">
-            <motion.div
-              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary/60 to-primary"
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+          return (
+            <Station
+              key={station.id}
+              station={station}
+              position={STATION_POSITIONS[i]}
+              status={status}
+              canvasW={canvasSize.w}
+              canvasH={canvasSize.h}
             />
-            {/* Shimmer */}
-            <motion.div
-              className="absolute inset-y-0 w-12 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-              animate={{ left: ["-10%", "110%"] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
-            />
-          </div>
-          <div className="mt-2 flex justify-between text-[10px] text-muted-foreground/50">
-            <span>{currentIdx + 1} / {AGENTS.length} 단계</span>
-            <span>{progress}%</span>
-          </div>
-        </div>
+          );
+        })}
 
-        {/* Used datasets - compact */}
+        {/* Agent token that travels between stations */}
+        <AgentToken
+          stationIdx={currentIdx}
+          color={activeStation?.color || "#3B82F6"}
+          isWorking={true}
+          canvasW={canvasSize.w}
+          canvasH={canvasSize.h}
+        />
+
+        {/* Flying data packets */}
         <AnimatePresence>
-          {usedDatasets.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="mt-8 flex flex-wrap justify-center gap-1.5"
-            >
-              {usedDatasets.slice(0, 4).map((ds, i) => (
-                <motion.div
-                  key={ds.id}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.08 }}
-                >
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] font-normal bg-white/60 backdrop-blur-sm border shadow-sm"
-                  >
-                    {ds.title}
-                  </Badge>
-                </motion.div>
-              ))}
-              {usedDatasets.length > 4 && (
-                <Badge variant="outline" className="text-[10px] font-normal">
-                  +{usedDatasets.length - 4}
-                </Badge>
-              )}
-            </motion.div>
-          )}
+          {packets.map((pkt) => (
+            <FlyingPacket
+              key={pkt.id}
+              fromIdx={pkt.from}
+              toIdx={pkt.to}
+              color={STATIONS[pkt.to].color}
+              canvasW={canvasSize.w}
+              canvasH={canvasSize.h}
+            />
+          ))}
         </AnimatePresence>
       </div>
+
+      {/* Datasets - compact footer */}
+      <AnimatePresence>
+        {usedDatasets.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="px-5 py-3 border-t bg-white/40 backdrop-blur-sm flex items-center gap-2 flex-wrap"
+          >
+            <span className="text-[10px] font-medium text-muted-foreground/50 shrink-0">데이터</span>
+            {usedDatasets.slice(0, 3).map((ds, i) => (
+              <motion.div
+                key={ds.id}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.06 }}
+              >
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] font-normal bg-white/70 border shadow-sm"
+                >
+                  {ds.title}
+                </Badge>
+              </motion.div>
+            ))}
+            {usedDatasets.length > 3 && (
+              <span className="text-[10px] text-muted-foreground/40">
+                +{usedDatasets.length - 3}
+              </span>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
