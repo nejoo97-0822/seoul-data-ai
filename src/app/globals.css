@@ -417,3 +417,316 @@
   from { opacity: 0; transform: scale(0.85); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCENE STAGE v2 — Loading-time cinematic sequence
+   One vignette at a time. Temporal scenes, not spatial zones.
+   All keyframes prefixed `stg*` to avoid collision with hub* / agent.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Chrome & ambient ──────────────────────────────────── */
+@keyframes stgChromeSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes stgTickerSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes stgChipIn {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes stgFloorGlow {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.7; }
+}
+
+/* ── Scene transition curtains ─────────────────────────── */
+@keyframes stgCurtainFade {
+  0%   { opacity: 0; }
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes stgFlashWhite {
+  0%, 100% { opacity: 0; }
+  15%      { opacity: 0.95; }
+  60%      { opacity: 0; }
+}
+
+/* ═══════ SCENE 1 — SPAWN ═══════ */
+@keyframes stgS1ParticleConverge {
+  0%   {
+    opacity: 0;
+    transform: translate(var(--cx, 0px), var(--cy, 0px)) scale(1);
+  }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; transform: translate(0, 0) scale(0.4); }
+  100% { opacity: 0; transform: translate(0, 0) scale(0); }
+}
+@keyframes stgS1CardMaterialize {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotateZ(-4deg); filter: blur(12px); }
+  55%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotateZ(1deg); filter: blur(0); }
+  75%  { transform: translate(-50%, -50%) scale(0.98) rotateZ(-0.5deg); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotateZ(0); }
+}
+@keyframes stgS1TypeReveal {
+  0%   { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+@keyframes stgS1StampSlam {
+  0%   { opacity: 0; transform: translate(0, -30px) rotate(-45deg) scale(2.2); }
+  45%  { opacity: 0; transform: translate(0, -30px) rotate(-45deg) scale(2.2); }
+  65%  { opacity: 1; transform: translate(0, 0) rotate(-10deg) scale(1.15); }
+  80%  { transform: translate(0, 0) rotate(-14deg) scale(1); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(-12deg) scale(1); }
+}
+@keyframes stgS1StampRipple {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  60%  { opacity: 0; }
+  65%  { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(3.2); }
+}
+@keyframes stgS1CardLaunch {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
+  100% { opacity: 0; transform: translate(-180%, -220%) scale(0.5) rotate(-18deg); }
+}
+
+/* ═══════ SCENE 2 — INTAKE ═══════ */
+@keyframes stgS2BeltFlow {
+  0%   { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+@keyframes stgS2CardDrop {
+  0%   { opacity: 0; transform: translate(-50%, -240%) rotate(-6deg); }
+  45%  { opacity: 1; transform: translate(-50%, -50%) rotate(0); }
+  55%  { transform: translate(-50%, -42%) rotate(1deg); }
+  100% { opacity: 1; transform: translate(-50%, -50%) rotate(0); }
+}
+@keyframes stgS2CardTravel {
+  0%   { left: 78%; }
+  100% { left: 18%; }
+}
+@keyframes stgS2ChuteDoorOpen {
+  0%   { transform: scaleY(1); }
+  100% { transform: scaleY(0.1); }
+}
+@keyframes stgS2CardIntake {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  70%  { opacity: 0.8; transform: translate(-50%, -50%) scale(0.65); filter: blur(1px); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); filter: blur(4px); }
+}
+@keyframes stgS2LampBlink {
+  0%, 100% { opacity: 0.25; box-shadow: 0 0 0 0 currentColor; }
+  50%      { opacity: 1;    box-shadow: 0 0 10px 2px currentColor; }
+}
+
+/* ═══════ SCENE 3 — DISCOVERY ═══════ */
+@keyframes stgS3ScanBeam {
+  0%   { left: -8%; opacity: 0; }
+  10%  { opacity: 0.95; }
+  90%  { opacity: 0.95; }
+  100% { left: 108%; opacity: 0; }
+}
+@keyframes stgS3ShelfHighlight {
+  0%, 100% { opacity: 0.35; filter: brightness(1); }
+  50%      { opacity: 1;    filter: brightness(1.45); }
+}
+@keyframes stgS3BoxLift {
+  0%   { opacity: 0; transform: translate(var(--origin-x, 0), var(--origin-y, 0)) scale(0.6); }
+  40%  { opacity: 1; }
+  100% { opacity: 1; transform: translate(var(--target-x, 0), var(--target-y, 0)) scale(1); }
+}
+@keyframes stgS3BoxFloat {
+  0%, 100% { transform: translate(var(--target-x, 0), var(--target-y, 0)) scale(1); }
+  50%      { transform: translate(var(--target-x, 0), calc(var(--target-y, 0px) - 4px)) scale(1.02); }
+}
+@keyframes stgS3LabelUnfold {
+  0%   { opacity: 0; transform: scaleX(0); transform-origin: left center; }
+  100% { opacity: 1; transform: scaleX(1); }
+}
+@keyframes stgS3DollyIn {
+  0%   { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+/* ═══════ SCENE 4 — ALIGNMENT ═══════ */
+@keyframes stgS4PacketEnter {
+  0%   { opacity: 0; transform: translate(calc(-120% + var(--drift-x, 0px)), var(--drift-y, 0px)) rotate(var(--drift-r, 0deg)) scale(var(--drift-s, 1)); }
+  40%  { opacity: 1; }
+  100% { opacity: 1; transform: translate(var(--drift-x, 0px), var(--drift-y, 0px)) rotate(var(--drift-r, 0deg)) scale(var(--drift-s, 1)); }
+}
+@keyframes stgS4GridOverlay {
+  0%   { opacity: 0; }
+  100% { opacity: 0.55; }
+}
+@keyframes stgS4AlignmentBeam {
+  0%   { left: -5%; opacity: 0; }
+  10%  { opacity: 0.9; }
+  90%  { opacity: 0.9; }
+  100% { left: 105%; opacity: 0; }
+}
+@keyframes stgS4PacketNormalize {
+  0%   {
+    transform: translate(var(--drift-x, 0px), var(--drift-y, 0px)) rotate(var(--drift-r, 0deg)) scale(var(--drift-s, 1));
+    filter: saturate(0.6) brightness(0.95);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0) scale(1);
+    filter: saturate(1) brightness(1);
+  }
+}
+@keyframes stgS4PulseRing {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  30%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.2); }
+}
+@keyframes stgS4TagPop {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.7); }
+  50%  { opacity: 1; transform: translateY(-2px) scale(1.06); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes stgS4BundleCondense {
+  0%   { opacity: 1; transform: translate(var(--final-x, 0px), 0) scale(1); }
+  100% { opacity: 1; transform: translate(0, 0) scale(0.86); }
+}
+
+/* ═══════ SCENE 5 — COMPUTE ═══════ */
+@keyframes stgS5ParticleIn {
+  0%   {
+    opacity: 0;
+    transform: translate(var(--start-x, 0px), var(--start-y, 0px)) scale(1);
+  }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(0, 0) scale(0.2); }
+}
+@keyframes stgS5CoreBreath {
+  0%   { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+  50%  { transform: translate(-50%, -50%) scale(1.14); filter: brightness(1.3); }
+  100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+}
+@keyframes stgS5CoreGrow {
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  100% { transform: translate(-50%, -50%) scale(1.35); }
+}
+@keyframes stgS5RingSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes stgS5RingSpinReverse {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+@keyframes stgS5RingExpand {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  20%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4); }
+}
+@keyframes stgS5GlyphOrbit {
+  from { transform: rotate(0deg) translateX(var(--orbit-r, 80px)) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(var(--orbit-r, 80px)) rotate(-360deg); }
+}
+@keyframes stgS5ArcFlicker {
+  0%, 100% { opacity: 0; }
+  10%      { opacity: 0.9; }
+  15%      { opacity: 0.2; }
+  22%      { opacity: 0.85; }
+  30%      { opacity: 0; }
+}
+@keyframes stgS5CoreFlare {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  50%  { opacity: 1; transform: translate(-50%, -50%) scale(2.4); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(3.6); }
+}
+@keyframes stgS5CoreCollapse {
+  0%   { transform: translate(-50%, -50%) scale(1.35); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.12); opacity: 1; }
+}
+@keyframes stgS5SeedShoot {
+  0%   { transform: translate(-50%, -50%) scale(0.12); opacity: 1; }
+  100% { transform: translate(-50%, -280%) scale(0.04); opacity: 0; }
+}
+
+/* ═══════ SCENE 6 — ASSEMBLY ═══════ */
+@keyframes stgS6FrameFade {
+  0%   { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes stgS6PieceDropTop {
+  0%   { opacity: 0; transform: translateY(-80px) scale(0.9); }
+  60%  { opacity: 1; transform: translateY(8px) scale(1.04); }
+  80%  { transform: translateY(-3px) scale(0.99); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes stgS6PieceSlideLeft {
+  0%   { opacity: 0; transform: translateX(-120px); }
+  70%  { opacity: 1; transform: translateX(4px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes stgS6PieceSlideRight {
+  0%   { opacity: 0; transform: translateX(120px); }
+  70%  { opacity: 1; transform: translateX(-4px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes stgS6PieceFadeUp {
+  0%   { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes stgS6SnapPing {
+  0%   { opacity: 0.9; transform: translate(-50%, -50%) scale(0.4); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.8); }
+}
+@keyframes stgS6TextLineDraw {
+  0%   { width: 0; }
+  100% { width: 100%; }
+}
+@keyframes stgS6DossierLift {
+  0%   { transform: translate(-50%, -50%) scale(1) rotateX(0deg); }
+  100% { transform: translate(-50%, -58%) scale(1.05) rotateX(-6deg); }
+}
+
+/* ═══════ SCENE 7 — REVEAL ═══════ */
+@keyframes stgS7DossierFloat {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.85); }
+  50%  { opacity: 1; transform: translate(-50%, -52%) scale(1.04); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes stgS7DossierBob {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -53%) scale(1.01); }
+}
+@keyframes stgS7SpineUnwrap {
+  0%   { transform: scaleX(0); opacity: 0; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+@keyframes stgS7RibbonUnfurl {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+@keyframes stgS7Bloom {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  40%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.8); }
+}
+@keyframes stgS7ShockWave {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.6); border-width: 3px; }
+  25%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(3); border-width: 0.5px; }
+}
+@keyframes stgS7ParticleBloom {
+  0%   {
+    opacity: 0;
+    transform: translate(0, 0) scale(1);
+  }
+  20%  { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(var(--bloom-x, 0px), var(--bloom-y, 0px)) scale(0.2);
+  }
+}
+@keyframes stgS7Completed {
+  0%   { opacity: 0; transform: translate(-50%, 4px) scale(0.9); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
