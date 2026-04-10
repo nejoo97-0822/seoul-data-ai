@@ -149,3 +149,271 @@
   85%  { opacity: 1; }
   100% { transform: translateY(-20px); opacity: 0; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DATA HUB SCENE — Seoul Data Logistics Hub
+   Scene-based interaction, not a pipeline diagram.
+   All keyframes prefixed `hub*` to avoid collision with AgentWorkflow.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Ambient atmosphere ────────────────────────────────── */
+@keyframes hubAmbientBreathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 0.75; transform: scale(1.015); }
+}
+
+@keyframes hubFloorShimmer {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.55; }
+}
+
+@keyframes hubDust {
+  0%   { transform: translate3d(0, 0, 0);          opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.6; }
+  100% { transform: translate3d(8px, -60px, 0);    opacity: 0; }
+}
+
+@keyframes hubScanSweep {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  10%  { opacity: 0.7; }
+  90%  { opacity: 0.7; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+/* ── Focus spotlight (moves/fades per active zone) ─────── */
+@keyframes hubSpotlightIn {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hubZoneIdlePulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.5; }
+}
+
+@keyframes hubZoneActivePulse {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.025); }
+}
+
+@keyframes hubPlatformRing {
+  0%   { transform: scale(0.6); opacity: 0; }
+  30%  { opacity: 0.6; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* ── Intake — Quest order spawning ─────────────────────── */
+@keyframes hubQuestMaterialize {
+  0%   { opacity: 0; transform: translate(-50%, -40%) scale(0.4) rotateX(-60deg); filter: blur(6px); }
+  40%  { opacity: 1; transform: translate(-50%, -52%) scale(1.06) rotateX(0deg);  filter: blur(0); }
+  55%  { transform: translate(-50%, -50%) scale(0.98); }
+  70%  { transform: translate(-50%, -50%) scale(1.02); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes hubQuestStampRipple {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  30%  { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(3); }
+}
+
+@keyframes hubQuestGlow {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.85; }
+}
+
+@keyframes hubQuestDeliver {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  70%  { transform: translate(12vw, -1vh) scale(0.9); opacity: 0.9; }
+  100% { transform: translate(14vw, 0) scale(0.6); opacity: 0; }
+}
+
+/* ── Catalog — Archive discovery ───────────────────────── */
+@keyframes hubShelfGlow {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 0.55; }
+}
+
+@keyframes hubVolumePull {
+  0%   { opacity: 0; transform: translateY(0) scale(0.85); }
+  15%  { opacity: 1; transform: translateY(-6px) scale(1); }
+  40%  { transform: translateY(-12px) scale(1.04); }
+  100% { opacity: 1; transform: translateY(-12px) scale(1); }
+}
+
+@keyframes hubVolumeDrift {
+  0%, 100% { transform: translateY(-12px); }
+  50%      { transform: translateY(-15px); }
+}
+
+@keyframes hubCatalogBeam {
+  0%   { opacity: 0; transform: scaleY(0); }
+  25%  { opacity: 0.7; transform: scaleY(1); }
+  75%  { opacity: 0.7; transform: scaleY(1); }
+  100% { opacity: 0; transform: scaleY(0); }
+}
+
+/* ── Validation — Gate scan ────────────────────────────── */
+@keyframes hubGateScan {
+  0%   { left: -10%; opacity: 0; }
+  10%  { opacity: 0.9; }
+  90%  { opacity: 0.9; }
+  100% { left: 110%; opacity: 0; }
+}
+
+@keyframes hubGatePass {
+  0%   { transform: translate(0, 0) scale(1);        opacity: 1; }
+  50%  { transform: translate(45px, 0) scale(1.06);  opacity: 1; }
+  100% { transform: translate(90px, 0) scale(0.9);   opacity: 0.85; }
+}
+
+@keyframes hubGateReject {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg);         opacity: 1; }
+  35%  { transform: translate(30px, 0) scale(1.04) rotate(0deg);   opacity: 1; }
+  55%  { transform: translate(30px, 0) scale(1) rotate(-6deg);     opacity: 0.9; }
+  100% { transform: translate(30px, 46px) scale(0.55) rotate(-30deg); opacity: 0; }
+}
+
+@keyframes hubGateCheck {
+  0%, 30% { opacity: 0; transform: scale(0); }
+  40%     { opacity: 1; transform: scale(1.45); }
+  55%     { transform: scale(0.92); }
+  70%     { transform: scale(1.05); }
+  100%    { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hubGatePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+  50%      { box-shadow: 0 0 0 14px rgba(245, 158, 11, 0); }
+}
+
+/* ── Compute — Core reactor (THE wow) ──────────────────── */
+@keyframes hubCoreBreath {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 50px 10px rgba(139, 92, 246, 0.35); }
+  50%      { transform: scale(1.06); box-shadow: 0 0 70px 22px rgba(139, 92, 246, 0.55); }
+}
+
+@keyframes hubCoreSpin {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes hubCoreSpinReverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg);   }
+}
+
+@keyframes hubCoreRing {
+  0%   { transform: scale(0.8); opacity: 0; }
+  15%  { opacity: 0.7; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes hubCoreOrbit {
+  from { transform: rotate(0deg)   translateX(58px) rotate(0deg);   }
+  to   { transform: rotate(360deg) translateX(58px) rotate(-360deg); }
+}
+
+@keyframes hubCoreOrbitInner {
+  from { transform: rotate(0deg)   translateX(38px) rotate(0deg);   }
+  to   { transform: rotate(-360deg) translateX(38px) rotate(360deg); }
+}
+
+@keyframes hubEnergyBolt {
+  0%   { opacity: 0; stroke-dashoffset: 80; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; stroke-dashoffset: 0; }
+}
+
+@keyframes hubDataStream {
+  0%   { transform: translate(0, 0) scale(1);       opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0.2); opacity: 0; }
+}
+
+@keyframes hubPacketToCore {
+  0%   { transform: translate(0, 0) scale(1);               opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0.15); opacity: 0; }
+}
+
+@keyframes hubGridPulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.75; }
+}
+
+/* ── Report — Assembly & Reveal ────────────────────────── */
+@keyframes hubReportAssemble {
+  0%   { opacity: 0; transform: translate(-50%, -40%) scaleY(0.1) scaleX(0.7); }
+  30%  { opacity: 1; transform: translate(-50%, -50%) scaleY(0.2) scaleX(1);  }
+  65%  { transform: translate(-50%, -50%) scaleY(1.06) scaleX(1); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scaleY(1) scaleX(1);    }
+}
+
+@keyframes hubReportLine {
+  0%   { opacity: 0; transform: translateX(-20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes hubReportLift {
+  0%   { transform: translate(-50%, -50%) scale(1);       box-shadow: 0 8px 24px rgba(15,23,42,0.12); }
+  50%  { transform: translate(-50%, -58%) scale(1.06);    box-shadow: 0 40px 80px rgba(15,23,42,0.22); }
+  100% { transform: translate(-50%, -55%) scale(1.03);    box-shadow: 0 26px 60px rgba(15,23,42,0.18); }
+}
+
+@keyframes hubSparkBurst {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+}
+
+/* ── Conveyor connectors between zones ─────────────────── */
+@keyframes hubConveyorFlow {
+  0%   { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+
+@keyframes hubConveyorFlowActive {
+  0%   { background-position: 0 0;  opacity: 0.9; }
+  100% { background-position: 60px 0; opacity: 0.9; }
+}
+
+/* ── Carrier (work item traveling zone→zone) ───────────── */
+@keyframes hubCarrierFlow {
+  0%   {
+    left: var(--from-x);
+    top:  var(--from-y);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  15%  {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+  35%  {
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+  85%  {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    left: var(--to-x);
+    top:  var(--to-y);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+}
+
+/* ── Progress pill / meta ──────────────────────────────── */
+@keyframes hubMetaSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hubChipIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
